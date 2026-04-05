@@ -1,8 +1,8 @@
 import { useState } from "react"
 import {View, ScrollView, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, Alert} from "react-native"
 import { Link } from "expo-router"
-import { Input } from "@/components/input"
-import { Button } from "@/components/button"
+import { Input } from "@/components/Input"
+import { Button } from "@/components/Button"
 
 export default function Index(){
 
