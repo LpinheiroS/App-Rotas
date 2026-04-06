@@ -3,19 +3,44 @@ import {View, ScrollView, Text, Image, StyleSheet, KeyboardAvoidingView, Platfor
 import { Link } from "expo-router"
 import { Input } from "@/components/Input"
 import { Button } from "@/components/Button"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export default function Index(){
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
 
-    function handleSignIn(){
-        if(!email.trim() || !password.trim()){
-            return Alert.alert("Erro", "Preencha os campos e e-mail e senha.")    
+    function handleSignIn() {
+        if (!email.trim() || !password.trim()) {
+            return Alert.alert("Erro", "Preencha os campos e e-mail e senha.");
         }
 
-        Alert.alert("Bem-vindo", `Olá ${email}`)    
-
+        fetch("http://192.168.15.26:3000/auth/login", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, senha: password })
+        })
+        .then(res => res.json())
+        .then(async data => {
+        if (data.erro) {
+            Alert.alert("Erro", data.erro);
+        } else {
+            // Login bem-sucedido, salvar token
+            try {
+            await AsyncStorage.setItem("@token", data.token);
+            Alert.alert("Bem-vindo", `Olá ${email}`);
+            } catch (e) {
+            console.error("Erro ao salvar token:", e);
+            Alert.alert("Erro", "Não foi possível salvar o token localmente");
+            }
+        }
+        })
+        .catch(err => {
+        console.error(err);
+        Alert.alert("Erro", "Não foi possível conectar ao servidor");
+        });
     }
 
     return(
