@@ -1,11 +1,12 @@
 import { useState } from "react"
 import {View, ScrollView, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, Alert} from "react-native"
-import { Link } from "expo-router"
+import { Link, useRouter } from "expo-router"
 import { Input } from "@/components/Input"
 import { Button } from "@/components/Button"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export default function Index(){
+    const router = useRouter()
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -30,7 +31,7 @@ export default function Index(){
             // Login bem-sucedido, salvar token
             try {
             await AsyncStorage.setItem("@token", data.token);
-            Alert.alert("Bem-vindo", `Olá ${email}`);
+            router.replace({ pathname: "/home" as any, params: { email } });
             } catch (e) {
             console.error("Erro ao salvar token:", e);
             Alert.alert("Erro", "Não foi possível salvar o token localmente");

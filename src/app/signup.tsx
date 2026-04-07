@@ -1,9 +1,45 @@
-import {View, ScrollView, Text, Image, StyleSheet, KeyboardAvoidingView, Platform} from "react-native"
+import { useState } from "react";
+import {View, ScrollView, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, Alert} from "react-native"
 import { Link } from "expo-router"
 import { Input } from "@/components/Input"
 import { Button } from "@/components/Button"
 
 export default function SignUp(){
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
+    function handleSignUp() {
+        if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+            return Alert.alert("Erro", "Preencha todos os campos.");
+        }
+
+        if (password !== confirmPassword) {
+            return Alert.alert("Erro", "As senhas não coincidem.");
+        }
+
+        fetch("http://192.168.15.26:3000/auth/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ nome: name, email, senha: password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.erro) {
+                Alert.alert("Erro", data.erro);
+            } else {
+                Alert.alert("Sucesso", data.mensagem || "Usuário criado com sucesso!");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Alert.alert("Erro", "Não foi possível conectar ao servidor");
+        });
+    }
+
     return(
         <KeyboardAvoidingView 
             style={{flex: 1}} 
@@ -22,11 +58,11 @@ export default function SignUp(){
                     <Text style = {styles.title}>Cadastrar</Text>
                     <Text style = {styles.subtitle}>Crie sua conta</Text>
                     <View style={styles.form}>
-                        <Input placeholder="Nome"/>
-                        <Input placeholder="E-mail" keyboardType="email-address"/>
-                        <Input placeholder="Senha" secureTextEntry/>
-                        <Input placeholder="Confirmar Senha" secureTextEntry/>
-                        <Button label="Cadastrar"/>
+                        <Input placeholder="Nome" onChangeText={setName}/>
+                        <Input placeholder="E-mail" keyboardType="email-address" onChangeText={setEmail}/>
+                        <Input placeholder="Senha" secureTextEntry onChangeText={setPassword}/>
+                        <Input placeholder="Confirmar Senha" secureTextEntry onChangeText={setConfirmPassword}/>
+                        <Button label="Cadastrar" onPress={handleSignUp}/>
                     </View>
 
                     <Text style={styles.footerText}>
