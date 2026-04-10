@@ -19,8 +19,10 @@ export default function Home() {
                 <Text style={styles.title}>Bem-vindo!</Text>
                 <Text style={styles.subtitle}>Você está logado como:</Text>
                 <Text style={styles.email}>{email || "Usuário"}</Text>
-                
+
                 <View style={styles.buttonContainer}>
+                    <Button label="Cadastrar Nova Rota" onPress={() => router.push("/new-route" as any)} />
+                    <View style={{ height: 16 }} />
                     <Button label="Sair" onPress={handleLogout} />
                 </View>
             </View>
