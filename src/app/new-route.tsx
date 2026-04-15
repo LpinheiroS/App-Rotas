@@ -10,6 +10,8 @@ type Address = {
     rua: string;
     numero: string;
     complemento?: string;
+    isStart?: boolean;
+    isEnd?: boolean;
 };
 
 export default function NewRoute() {
@@ -21,6 +23,9 @@ export default function NewRoute() {
     const [rua, setRua] = useState("");
     const [numero, setNumero] = useState("");
     const [complemento, setComplemento] = useState("");
+    const [isStart, setIsStart] = useState(false);
+    const [isEnd, setIsEnd] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     const handleCepChange = (text: string) => {
         // Only keep numbers
@@ -46,21 +51,56 @@ export default function NewRoute() {
     const addAddress = () => {
         if (!isFormValid) return;
 
-        const newAddress: Address = {
-            id: Date.now().toString(),
-            cep,
-            rua,
-            numero,
-            complemento: complemento.trim() || undefined,
-        };
-
-        setAddresses([...addresses, newAddress]);
+        if (editingId) {
+            setAddresses(prev =>
+                prev.map(addr => {
+                    if (addr.id === editingId) {
+                        return { ...addr, cep, rua, numero, complemento: complemento.trim() || undefined, isStart, isEnd };
+                    }
+                    return {
+                        ...addr,
+                        isStart: isStart ? false : addr.isStart,
+                        isEnd: isEnd ? false : addr.isEnd,
+                    };
+                })
+            );
+            setEditingId(null);
+        } else {
+            const newAddress: Address = {
+                id: Date.now().toString(),
+                cep,
+                rua,
+                numero,
+                complemento: complemento.trim() || undefined,
+                isStart,
+                isEnd
+            };
+            setAddresses(prev =>
+                [...prev.map(addr => ({
+                    ...addr,
+                    isStart: isStart ? false : addr.isStart,
+                    isEnd: isEnd ? false : addr.isEnd,
+                })), newAddress]
+            );
+        }
 
         // Clear form
         setCep("");
         setRua("");
         setNumero("");
         setComplemento("");
+        setIsStart(false);
+        setIsEnd(false);
+    };
+
+    const editAddress = (address: Address) => {
+        setCep(address.cep);
+        setRua(address.rua);
+        setNumero(address.numero);
+        setComplemento(address.complemento || "");
+        setIsStart(!!address.isStart);
+        setIsEnd(!!address.isEnd);
+        setEditingId(address.id);
     };
 
     const removeAddress = (id: string) => {
@@ -87,7 +127,7 @@ export default function NewRoute() {
                 {/* Form */}
                 <View className="bg-gray-50 p-5 rounded-2xl border border-gray-100 mb-8">
                     <Text className="text-sm font-bold text-primary mb-4 uppercase tracking-wider">
-                        Novo Endereço
+                        {editingId ? "Editar Endereço" : "Novo Endereço"}
                     </Text>
 
                     <View className="mb-4">
@@ -142,14 +182,31 @@ export default function NewRoute() {
                         </View>
                     </View>
 
+                    <View className="flex-row items-center mb-6">
+                        <TouchableOpacity 
+                            className="flex-row items-center mr-6" 
+                            onPress={() => setIsStart(prev => !prev)}
+                        >
+                            <Ionicons name={isStart ? "checkbox" : "square-outline"} size={24} color={isStart ? "#032AD7" : "#9CA3AF"} />
+                            <Text className="ml-2 text-gray-700 font-semibold">Partida</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            className="flex-row items-center" 
+                            onPress={() => setIsEnd(prev => !prev)}
+                        >
+                            <Ionicons name={isEnd ? "checkbox" : "square-outline"} size={24} color={isEnd ? "#032AD7" : "#9CA3AF"} />
+                            <Text className="ml-2 text-gray-700 font-semibold">Chegada</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity
                         onPress={addAddress}
                         className={`w-full py-4 rounded-xl flex-row justify-center items-center ${isFormValid ? 'bg-primary' : 'bg-blue-300'
                             }`}
                         disabled={!isFormValid}
                     >
-                        <Ionicons name="add-circle-outline" size={20} color="white" className="mr-2" />
-                        <Text className="text-white font-bold text-base ml-2">Adicionar à Rota</Text>
+                        <Ionicons name={editingId ? "save-outline" : "add-circle-outline"} size={20} color="white" className="mr-2" />
+                        <Text className="text-white font-bold text-base ml-2">{editingId ? "Salvar Alterações" : "Adicionar à Rota"}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -170,9 +227,21 @@ export default function NewRoute() {
                                 </View>
 
                                 <View className="flex-1">
-                                    <Text className="text-base font-bold text-gray-900 mb-0.5">
-                                        {item.rua}, {item.numero}
-                                    </Text>
+                                    <View className="flex-row items-center flex-wrap mb-0.5">
+                                        <Text className="text-base font-bold text-gray-900 mr-2">
+                                            {item.rua}, {item.numero}
+                                        </Text>
+                                        {item.isStart && (
+                                            <View className="bg-green-100 px-2 py-0.5 rounded mr-2 mt-1">
+                                                <Text className="text-green-800 text-xs font-bold">Partida</Text>
+                                            </View>
+                                        )}
+                                        {item.isEnd && (
+                                            <View className="bg-red-100 px-2 py-0.5 rounded mt-1">
+                                                <Text className="text-red-800 text-xs font-bold">Chegada</Text>
+                                            </View>
+                                        )}
+                                    </View>
                                     {(item.complemento || item.cep) && (
                                         <Text className="text-sm text-gray-500">
                                             {item.complemento ? `${item.complemento} - ` : ''}CEP: {item.cep}
@@ -180,12 +249,20 @@ export default function NewRoute() {
                                     )}
                                 </View>
 
-                                <TouchableOpacity
-                                    onPress={() => removeAddress(item.id)}
-                                    className="p-2"
-                                >
-                                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                                </TouchableOpacity>
+                                <View className="flex-row items-center ml-2">
+                                    <TouchableOpacity
+                                        onPress={() => editAddress(item)}
+                                        className="p-2 mr-1"
+                                    >
+                                        <Ionicons name="pencil-outline" size={20} color="#032AD7" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => removeAddress(item.id)}
+                                        className="p-2"
+                                    >
+                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         ))}
 
