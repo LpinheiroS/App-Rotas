@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { ActivityIndicator, Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -26,6 +28,7 @@ export default function NewRoute() {
     const [isStart, setIsStart] = useState(false);
     const [isEnd, setIsEnd] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
     const handleCepChange = (text: string) => {
         // Only keep numbers
@@ -107,6 +110,61 @@ export default function NewRoute() {
         setAddresses(addresses.filter(addr => addr.id !== id));
     };
 
+    const handleCalculateRoute = async () => {
+        if (addresses.length < 2) return;
+
+        // Monta o payload somente com os campos esperados pelo backend
+        const payload = {
+            addresses: addresses.map((addr, idx) => ({
+                cep: addr.cep.replace(/\D/g, ""),
+                rua: addr.rua,
+                numero: Number(addr.numero),
+                isStart: !!addr.isStart,
+                isEnd: !!addr.isEnd,
+                index: idx,
+            })),
+        };
+
+        try {
+            setLoading(true);
+
+            const token = await AsyncStorage.getItem("@token");
+            if (!token) {
+                Alert.alert("Sessão expirada", "Faça login novamente.");
+                return;
+            }
+
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/optimize`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.status === 401) {
+                Alert.alert("Sessão expirada", "Faça login novamente.");
+                return;
+            }
+
+            const json = await response.json();
+            const order: number[] = json.data;
+
+            router.push({
+                pathname: "/optimized-route" as any,
+                params: {
+                    addresses: JSON.stringify(addresses),
+                    order: JSON.stringify(order),
+                },
+            });
+        } catch (error) {
+            console.error("Erro ao calcular rota:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-white">
             <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100">
@@ -183,15 +241,15 @@ export default function NewRoute() {
                     </View>
 
                     <View className="flex-row items-center mb-6">
-                        <TouchableOpacity 
-                            className="flex-row items-center mr-6" 
+                        <TouchableOpacity
+                            className="flex-row items-center mr-6"
                             onPress={() => setIsStart(prev => !prev)}
                         >
                             <Ionicons name={isStart ? "checkbox" : "square-outline"} size={24} color={isStart ? "#032AD7" : "#9CA3AF"} />
                             <Text className="ml-2 text-gray-700 font-semibold">Partida</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity 
-                            className="flex-row items-center" 
+                        <TouchableOpacity
+                            className="flex-row items-center"
                             onPress={() => setIsEnd(prev => !prev)}
                         >
                             <Ionicons name={isEnd ? "checkbox" : "square-outline"} size={24} color={isEnd ? "#032AD7" : "#9CA3AF"} />
@@ -267,10 +325,19 @@ export default function NewRoute() {
                         ))}
 
                         <TouchableOpacity
-                            className="w-full py-4 rounded-xl flex-row justify-center items-center bg-green-500 mt-4 shadow-sm"
+                            className={`w-full py-4 rounded-xl flex-row justify-center items-center mt-4 shadow-sm ${loading ? "bg-green-300" : "bg-green-500"
+                                }`}
+                            onPress={handleCalculateRoute}
+                            disabled={loading}
                         >
-                            <Ionicons name="map-outline" size={20} color="white" />
-                            <Text className="text-white font-bold text-base ml-2">Calcular Rota</Text>
+                            {loading ? (
+                                <ActivityIndicator color="white" size="small" />
+                            ) : (
+                                <>
+                                    <Ionicons name="map-outline" size={20} color="white" />
+                                    <Text className="text-white font-bold text-base ml-2">Calcular Rota</Text>
+                                </>
+                            )}
                         </TouchableOpacity>
                     </View>
                 )}

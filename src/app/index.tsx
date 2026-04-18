@@ -16,7 +16,7 @@ export default function Index(){
             return Alert.alert("Erro", "Preencha os campos e e-mail e senha.");
         }
 
-        fetch("http://192.168.15.26:3000/auth/login", {
+        fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/login`, {
             method: "POST",
             headers: {
             "Content-Type": "application/json"

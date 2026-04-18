@@ -19,7 +19,7 @@ export default function SignUp(){
             return Alert.alert("Erro", "As senhas não coincidem.");
         }
 
-        fetch("http://192.168.15.26:3000/auth/register", {
+        fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
