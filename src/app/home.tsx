@@ -21,7 +21,7 @@ export default function Home() {
                 <Text style={styles.email}>{email || "Usuário"}</Text>
 
                 <View style={styles.buttonContainer}>
-                    <Button label="cadastrar Nova Rota" onPress={() => router.push("/new-route" as any)} />
+                    <Button label="Cadastrar Nova Rota" onPress={() => router.push("/new-route" as any)} />
                     <View style={{ height: 16 }} />
                     <Button label="Sair" onPress={handleLogout} />
                 </View>
